@@ -55,8 +55,10 @@ int main(int argc, char* argv[])
     }
     default:
     {
-      // Make read pipe non blocking
+      // Make clangd pipe non blocking
       fcntl(pipeToProxy[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxy[0], F_GETFL, 0));
+      // Make stdio non blocking
+      fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK | fcntl(STDIN_FILENO, F_GETFL, 0));
 
       // Close unused ends
       close(pipeToProg[0]);
@@ -64,14 +66,19 @@ int main(int argc, char* argv[])
 
       int constexpr size = 4096;
       char buffer[size];
+      char input[size];
 
       while (true)
       {
-        int bytes_read = read(pipeToProxy[0], buffer, size);
-        if (bytes_read == -1)
-          continue;
-        buffer[bytes_read] = 0;
-        printf("received[%d]: %s\n", bytes_read, buffer);
+        // Read data from clangd
+        size_t bytes_read_clangd = read(pipeToProxy[0], buffer, size);
+        if (bytes_read_clangd != -1)
+          printf("received[%zu]: %s\n", bytes_read_clangd, buffer);
+
+        // Read data from stdio
+        size_t bytes_read_input = read(STDIN_FILENO, input, size);
+        if (bytes_read_input != -1)
+          printf("input: %s\n", input);
       }
 
       printf("done\n");
