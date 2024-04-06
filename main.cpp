@@ -18,26 +18,23 @@ int main(int argc, char* argv[])
     printf(" ");
   }
   printf("\n");
-	printf("starting clangd\n");
+  printf("starting clangd\n");
 
-	// Create pipes for parent and child process to communicate
-	// read from 0 write to 1
-	int pipeToProg[2];
-	int pipeToProxy[2];
+  // Create pipes for parent and child process to communicate
+  // read from 0 write to 1
+  int pipeToProg[2];
+  int pipeToProxy[2];
 
-	if (pipe(pipeToProg))
-	{
-		printf("failed to create pipe to clangd\n");
-		return 1;
-	}
-	if (pipe(pipeToProxy))
-	{
-		printf("failed to create pipe to proxy\n");
-		return 1;
-	}
+  if (pipe(pipeToProg)) {
+    printf("failed to create pipe to clangd\n");
+    return 1;
+  }
+  if (pipe(pipeToProxy)) {
+    printf("failed to create pipe to proxy\n");
+    return 1;
+  }
 
-
-	switch (pid_t pid = fork())
+  switch (pid_t pid = fork())
   {
     case 0:
     {
@@ -96,8 +93,7 @@ int main(int argc, char* argv[])
       printf("Could not fork\n");
       return 1;
     }
-	}
+  }
 
   return 0;
 }
-
