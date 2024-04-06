@@ -1,6 +1,6 @@
-#include <iostream>
-#include <sys/types.h>
-#include <unistd.h>
+#include<iostream>
+#include<sys/types.h>
+#include<unistd.h>
 #include<sys/wait.h>
 #include<sys/prctl.h>
 #include<signal.h>
@@ -29,67 +29,67 @@ int main(int argc, char* argv[])
 	}
 
 
-	pid_t pid = fork();
+	switch (pid_t pid = fork())
+  {
+    case 0:
+    {
+      // Close unused ends
+      close(pipeToProg[1]);
+      close(pipeToProxy[0]);
 
-	if (pid == -1)
-	{
-		printf("Could not fork\n");
-		return 1;
-	}
-
-	if (pid == 0)
-	{
-		// Close unused ends
-		close(pipeToProg[1]);
-		close(pipeToProxy[0]);
-
-		std::string message = "";
-		int constexpr size = 4096;
-		char buffer[size];
-    int bytes_read = 0;
-
-		while (bytes_read < 10)
-		{
-			bytes_read += read(pipeToProg[0], buffer, size);
-			message += buffer;
-		}
-
-    std::string toProxy = "Sending this back to proxy: [" + message + "]";
-    write(pipeToProxy[1], toProxy.c_str(), toProxy.size());
-
-		return 0;
-	}
-	else
-	{
-		// Close unused ends
-		close(pipeToProg[0]);
-		close(pipeToProxy[1]);
-
-
-		printf("parent hello\n");
-		std::string toChild = "Sending this clangd";
-		write(pipeToProg[1], toChild.c_str(), toChild.size());
-
-    // recieve message from child
-		{
-			printf("try to read\n");
+      std::string message = "";
       int constexpr size = 4096;
       char buffer[size];
       int bytes_read = 0;
-      while (bytes_read < 10){
-        bytes_read += read(pipeToProxy[0], buffer, size);
-        printf("parent received: %s\n", buffer);
+
+      while (bytes_read < 10)
+      {
+        bytes_read += read(pipeToProg[0], buffer, size);
+        message += buffer;
       }
-      printf("parent read %d bytes\n", bytes_read);
-		}
 
-		printf("done\n");
+      std::string toProxy = "Sending this back to proxy: [" + message + "]";
+      write(pipeToProxy[1], toProxy.c_str(), toProxy.size());
+      return 0;
+    }
+    default:
+    {
+      // Close unused ends
+      close(pipeToProg[0]);
+      close(pipeToProxy[1]);
 
-		int status;
-		kill(pid, SIGKILL); //send SIGKILL signal to the child process
-		waitpid(pid, &status, 0);
+
+      printf("parent hello\n");
+      std::string toChild = "Sending this clangd";
+      write(pipeToProg[1], toChild.c_str(), toChild.size());
+
+      // recieve message from child
+      {
+        printf("try to read\n");
+        int constexpr size = 4096;
+        char buffer[size];
+        int bytes_read = 0;
+        while (bytes_read < 10){
+          bytes_read += read(pipeToProxy[0], buffer, size);
+          printf("parent received: %s\n", buffer);
+        }
+        printf("parent read %d bytes\n", bytes_read);
+      }
+
+      printf("done\n");
+
+      int status;
+      kill(pid, SIGKILL); //send SIGKILL signal to the child process
+      waitpid(pid, &status, 0);
+      return 0;
+    }
+    case -1:
+    {
+      printf("Could not fork\n");
+      return 1;
+    }
 	}
 
-	return 0;
+  return 0;
 }
 
