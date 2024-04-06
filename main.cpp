@@ -79,6 +79,9 @@ int main(int argc, char* argv[])
         size_t bytes_read_input = read(STDIN_FILENO, input, size);
         if (bytes_read_input != -1)
           printf("input: %s\n", input);
+
+        if (bytes_read_clangd == -1 && bytes_read_input == -1)
+          usleep(50000); // Sleep for 0.05 seconds
       }
 
       printf("done\n");
