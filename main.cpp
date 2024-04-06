@@ -11,6 +11,13 @@
 
 int main(int argc, char* argv[])
 {
+  printf("printing arguments:\n");
+  for (int i = 0; i < argc; i++)
+  {
+    printf("%s", argv[i]);
+    printf(" ");
+  }
+  printf("\n");
 	printf("starting clangd\n");
 
 	// Create pipes for parent and child process to communicate
@@ -42,29 +49,29 @@ int main(int argc, char* argv[])
       close(pipeToProg[1]);
       close(pipeToProxy[0]);
 
-      execl("/usr/bin/tee", "tee", (char*)NULL);
+      execl("/usr/bin/clangd", "clangd", (char*)NULL);
       printf("Could not execute clangd in child\n");
       return 0;
     }
     default:
     {
+      // Make read pipe non blocking
+      fcntl(pipeToProxy[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxy[0], F_GETFL, 0));
+
       // Close unused ends
       close(pipeToProg[0]);
       close(pipeToProxy[1]);
 
+      int constexpr size = 4096;
+      char buffer[size];
 
-      printf("parent hello\n");
-      char toChild[] = "Sending this clangd";
-      write(pipeToProg[1], toChild, strlen(toChild) + 1);
-
-      // recieve message from child
+      while (true)
       {
-        printf("try to read\n");
-        int constexpr size = 4096;
-        char buffer[size];
         int bytes_read = read(pipeToProxy[0], buffer, size);
-        printf("parent received: %s\n", buffer);
-        printf("parent read %d bytes\n", bytes_read);
+        if (bytes_read == -1)
+          continue;
+        buffer[bytes_read] = 0;
+        printf("received[%d]: %s\n", bytes_read, buffer);
       }
 
       printf("done\n");
