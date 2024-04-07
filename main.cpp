@@ -13,20 +13,21 @@
 
 int main(int argc, char* argv[])
 {
+  std::cout << "launching clangd-proxy\n";
   const char * homeDir = getenv("HOME");
   if (!homeDir)
   {
     std::cerr << "Could not get access to environment variable HOME" << std::endl;
     return 1;
   }
-  std::ofstream logfile(std::string(homeDir) + "/.clangd-proxy.log", std::ios_base::app);
+  std::ofstream logfile(std::string(homeDir) + "/.clangd-proxy.log");//, std::ios_base::app);
   if (!logfile.is_open())
   {
     std::cerr << "Could not open log file!" << std::endl;
     return 1;
   }
 
-  logfile << "printing arguments:";
+  logfile << "New session: ";
   for (int i = 0; i < argc; i++)
   {
     logfile << argv[i] << " ";
@@ -40,12 +41,12 @@ int main(int argc, char* argv[])
 
   if (pipe(pipeToProg))
   {
-    std::cerr << "failed to create pipe to clangd" << std::endl;
+    logfile << "failed to create pipe to clangd" << std::endl;
     return 1;
   }
   if (pipe(pipeToProxy))
   {
-    std::cerr << "failed to create pipe to proxy" << std::endl;
+    logfile << "failed to create pipe to proxy" << std::endl;
     return 1;
   }
 
@@ -53,22 +54,21 @@ int main(int argc, char* argv[])
   {
     case 0: // Child process (clangd)
     {
+      logfile << "clangd process created" << std::endl;
       dup2(pipeToProg[0], STDIN_FILENO);
       dup2(pipeToProxy[1], STDOUT_FILENO);
-      dup2(pipeToProxy[1], STDERR_FILENO);
 
       // Close unused ends
       close(pipeToProg[1]);
       close(pipeToProxy[0]);
 
-      logfile.close();
-
       execl("/usr/bin/clangd", "clangd", (char*)NULL);
-      std::cerr << "Could not execute clangd in child" << std::endl;
+      logfile << "Could not execute clangd in child" << std::endl;
       return 0;
     }
     default: // Parent process (proxy)
     {
+      logfile << "proxy process created" << std::endl;
       // Make clangd pipe non blocking
       fcntl(pipeToProxy[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxy[0], F_GETFL, 0));
       // Make stdio non blocking
@@ -78,21 +78,31 @@ int main(int argc, char* argv[])
       close(pipeToProg[0]);
       close(pipeToProxy[1]);
 
-      int constexpr size = 4096;
-      char buffer[size];
-      char input[size];
+      int constexpr size = 8192;
+      char output[size + 1];
+      char input[size + 1];
 
       while (true)
       {
         // Read data from clangd
-        size_t bytes_read_clangd = read(pipeToProxy[0], buffer, size);
+        size_t bytes_read_clangd = read(pipeToProxy[0], output, size);
         if (bytes_read_clangd != -1)
-          logfile << "received: " <<  buffer << std::endl;
+        {
+          output[bytes_read_clangd] = '\0'; // Null terminate string
+          // logfile << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
+          // logfile << "FROM CLANGD: " << output << std::endl;
+          write(STDOUT_FILENO, output, bytes_read_clangd);
+        }
 
         // Read data from stdio
         size_t bytes_read_input = read(STDIN_FILENO, input, size);
         if (bytes_read_input != -1)
-          logfile << "input: " << input << std::endl;
+        {
+          input[bytes_read_input] = '\0'; // Null terminate string
+          // logfile << "Read " << bytes_read_input << " bytes from input" << std::endl;
+          // logfile << "FROM EDITOR: " << input << std::endl;
+          write(pipeToProg[1], input, bytes_read_input);
+        }
 
         if (bytes_read_clangd == -1 && bytes_read_input == -1)
           usleep(50000); // Sleep for 0.05 seconds
@@ -106,7 +116,7 @@ int main(int argc, char* argv[])
     }
     case -1:
     {
-      std::cerr << "Could not fork" << std::endl;
+      logfile << "Could not fork" << std::endl;
       return 1;
     }
   }
