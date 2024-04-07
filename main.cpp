@@ -1,4 +1,6 @@
+#include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -11,32 +13,45 @@
 
 int main(int argc, char* argv[])
 {
-  printf("printing arguments:\n");
+  const char * homeDir = getenv("HOME");
+  if (!homeDir)
+  {
+    std::cerr << "Could not get access to environment variable HOME" << std::endl;
+    return 1;
+  }
+  std::ofstream logfile(std::string(homeDir) + "/.clangd-proxy.log", std::ios_base::app);
+  if (!logfile.is_open())
+  {
+    std::cerr << "Could not open log file!" << std::endl;
+    return 1;
+  }
+
+  logfile << "printing arguments:";
   for (int i = 0; i < argc; i++)
   {
-    printf("%s", argv[i]);
-    printf(" ");
+    logfile << argv[i] << " ";
   }
-  printf("\n");
-  printf("starting clangd\n");
+  logfile << std::endl;
 
   // Create pipes for parent and child process to communicate
   // read from 0 write to 1
   int pipeToProg[2];
   int pipeToProxy[2];
 
-  if (pipe(pipeToProg)) {
-    printf("failed to create pipe to clangd\n");
+  if (pipe(pipeToProg))
+  {
+    std::cerr << "failed to create pipe to clangd" << std::endl;
     return 1;
   }
-  if (pipe(pipeToProxy)) {
-    printf("failed to create pipe to proxy\n");
+  if (pipe(pipeToProxy))
+  {
+    std::cerr << "failed to create pipe to proxy" << std::endl;
     return 1;
   }
 
   switch (pid_t pid = fork())
   {
-    case 0:
+    case 0: // Child process (clangd)
     {
       dup2(pipeToProg[0], STDIN_FILENO);
       dup2(pipeToProxy[1], STDOUT_FILENO);
@@ -46,11 +61,13 @@ int main(int argc, char* argv[])
       close(pipeToProg[1]);
       close(pipeToProxy[0]);
 
+      logfile.close();
+
       execl("/usr/bin/clangd", "clangd", (char*)NULL);
-      printf("Could not execute clangd in child\n");
+      std::cerr << "Could not execute clangd in child" << std::endl;
       return 0;
     }
-    default:
+    default: // Parent process (proxy)
     {
       // Make clangd pipe non blocking
       fcntl(pipeToProxy[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxy[0], F_GETFL, 0));
@@ -70,27 +87,26 @@ int main(int argc, char* argv[])
         // Read data from clangd
         size_t bytes_read_clangd = read(pipeToProxy[0], buffer, size);
         if (bytes_read_clangd != -1)
-          printf("received[%zu]: %s\n", bytes_read_clangd, buffer);
+          logfile << "received: " <<  buffer << std::endl;
 
         // Read data from stdio
         size_t bytes_read_input = read(STDIN_FILENO, input, size);
         if (bytes_read_input != -1)
-          printf("input: %s\n", input);
+          logfile << "input: " << input << std::endl;
 
         if (bytes_read_clangd == -1 && bytes_read_input == -1)
           usleep(50000); // Sleep for 0.05 seconds
       }
 
-      printf("done\n");
-
       int status;
       kill(pid, SIGKILL); //send SIGKILL signal to the child process
       waitpid(pid, &status, 0);
+      logfile.close();
       return 0;
     }
     case -1:
     {
-      printf("Could not fork\n");
+      std::cerr << "Could not fork" << std::endl;
       return 1;
     }
   }
