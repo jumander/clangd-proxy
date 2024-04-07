@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
   // read from 0 write to 1
   int pipeToProg[2];
   int pipeToProxy[2];
+  int pipeToProxyInfo[2];
 
   if (pipe(pipeToProg))
   {
@@ -38,6 +39,11 @@ int main(int argc, char* argv[])
     return 1;
   }
   if (pipe(pipeToProxy))
+  {
+    logfile << "failed to create pipe to proxy" << std::endl;
+    return 1;
+  }
+  if (pipe(pipeToProxyInfo))
   {
     logfile << "failed to create pipe to proxy" << std::endl;
     return 1;
@@ -50,10 +56,12 @@ int main(int argc, char* argv[])
       logfile << "clangd process created" << std::endl;
       dup2(pipeToProg[0], STDIN_FILENO);
       dup2(pipeToProxy[1], STDOUT_FILENO);
+      dup2(pipeToProxyInfo[1], STDERR_FILENO);
 
       // Close unused ends
       close(pipeToProg[1]);
       close(pipeToProxy[0]);
+      close(pipeToProxyInfo[0]);
 
       execl("/usr/bin/clangd", "clangd", (char*)NULL);
       logfile << "Could not execute clangd in child" << std::endl;
@@ -62,22 +70,35 @@ int main(int argc, char* argv[])
     default: // Parent process (proxy)
     {
       logfile << "proxy process created" << std::endl;
-      // Make clangd pipe non blocking
-      fcntl(pipeToProxy[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxy[0], F_GETFL, 0));
       // Make stdio non blocking
       fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK | fcntl(STDIN_FILENO, F_GETFL, 0));
+      // Make clangd pipe non blocking
+      fcntl(pipeToProxy[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxy[0], F_GETFL, 0));
+      fcntl(pipeToProxyInfo[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxyInfo[0], F_GETFL, 0));
 
       // Close unused ends
       close(pipeToProg[0]);
       close(pipeToProxy[1]);
+      close(pipeToProxyInfo[1]);
 
       int constexpr size = 8192;
-      char output[size + 1];
       char input[size + 1];
+      char output[size + 1];
+      char info[size + 1];
 
       while (true)
       {
-        // Read data from clangd
+        // Handle stdio
+        size_t bytes_read_input = read(STDIN_FILENO, input, size);
+        if (bytes_read_input != -1)
+        {
+          input[bytes_read_input] = '\0'; // Null terminate string
+          // logfile << "Read " << bytes_read_input << " bytes from input" << std::endl;
+          // logfile << "FROM EDITOR: " << input << std::endl;
+          write(pipeToProg[1], input, bytes_read_input);
+        }
+
+        // Handle stdout
         size_t bytes_read_clangd = read(pipeToProxy[0], output, size);
         if (bytes_read_clangd != -1)
         {
@@ -87,14 +108,15 @@ int main(int argc, char* argv[])
           write(STDOUT_FILENO, output, bytes_read_clangd);
         }
 
-        // Read data from stdio
-        size_t bytes_read_input = read(STDIN_FILENO, input, size);
-        if (bytes_read_input != -1)
+        // Handle stderr
+        size_t bytes_read_clangd_err = read(pipeToProxyInfo[0], info, size);
+        if (bytes_read_clangd_err != -1)
         {
-          input[bytes_read_input] = '\0'; // Null terminate string
-          // logfile << "Read " << bytes_read_input << " bytes from input" << std::endl;
-          // logfile << "FROM EDITOR: " << input << std::endl;
-          write(pipeToProg[1], input, bytes_read_input);
+          info[bytes_read_clangd_err] = '\0'; // Null terminate string
+          logfile << info << std::endl;
+          // logfile << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
+          // logfile << "FROM CLANGD: " << info << std::endl;
+          write(STDERR_FILENO, info, bytes_read_clangd_err);
         }
 
         if (bytes_read_clangd == -1 && bytes_read_input == -1)
