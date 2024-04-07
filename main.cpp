@@ -1,14 +1,7 @@
-#include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <sys/types.h>
-#include <unistd.h>
 #include <sys/wait.h>
 #include <sys/prctl.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include <fcntl.h>
 
 int main(int argc, char* argv[])
