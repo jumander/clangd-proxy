@@ -3,18 +3,9 @@
 #include <sys/wait.h>
 #include <sys/prctl.h>
 #include <fcntl.h>
-#include "nlohmann/json.hpp"
 
 int main(int argc, char* argv[])
 {
-  nlohmann::json ex1 = nlohmann::json::parse(R"(
-    {
-      "pi": 3.141,
-      "happy": true
-    }
-  )");
-  std::cout << ex1["pi"] << std::endl;
-
   std::cout << "launching clangd-proxy\n";
   const char * homeDir = getenv("HOME");
   if (!homeDir)
