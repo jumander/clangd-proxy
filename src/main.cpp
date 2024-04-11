@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
     std::cerr << "Could not get access to environment variable HOME" << std::endl;
     return 1;
   }
-  std::ofstream logfile(std::string(homeDir) + "/.clangd-proxy.log");//, std::ios_base::app);
+  std::ofstream logfile(std::string(homeDir) + "/.clangd-proxy.log");
   if (!logfile.is_open())
   {
     std::cerr << "Could not open log file!" << std::endl;
