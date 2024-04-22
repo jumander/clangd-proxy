@@ -102,9 +102,8 @@ int main(int argc, char* argv[])
       while (true)
       {
         // Handle stdio
-        size_t bytes_read_input = read(STDIN_FILENO, input, size);
-        if (bytes_read_input != -1)
-        {
+        ssize_t bytes_read_input = read(STDIN_FILENO, input, size);
+        if (bytes_read_input > 0) {
           input[bytes_read_input] = '\0'; // Null terminate string
           // std::cout << "Read " << bytes_read_input << " bytes from input" << std::endl;
           // std::cout << "FROM EDITOR: " << input << std::endl;
@@ -112,8 +111,8 @@ int main(int argc, char* argv[])
         }
 
         // Handle stdout
-        size_t bytes_read_clangd = read(pipeToProxy[0], output, size);
-        if (bytes_read_clangd != -1)
+        ssize_t bytes_read_clangd = read(pipeToProxy[0], output, size);
+        if (bytes_read_clangd > 0)
         {
           output[bytes_read_clangd] = '\0'; // Null terminate string
           // std::cout << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
@@ -122,8 +121,8 @@ int main(int argc, char* argv[])
         }
 
         // Handle stderr
-        size_t bytes_read_clangd_err = read(pipeToProxyInfo[0], info, size);
-        if (bytes_read_clangd_err != -1)
+        ssize_t bytes_read_clangd_err = read(pipeToProxyInfo[0], info, size);
+        if (bytes_read_clangd_err > 0)
         {
           info[bytes_read_clangd_err] = '\0'; // Null terminate string
           std::cout << info << std::endl;
@@ -132,7 +131,7 @@ int main(int argc, char* argv[])
           write(STDERR_FILENO, info, bytes_read_clangd_err);
         }
 
-        if (bytes_read_clangd == -1 && bytes_read_input == -1)
+        if (bytes_read_clangd <= 0 && bytes_read_input <= 0)
           usleep(50000); // Sleep for 0.05 seconds
       }
 
