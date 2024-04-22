@@ -4,28 +4,40 @@
 #include <sys/prctl.h>
 #include <fcntl.h>
 
-int main(int argc, char* argv[])
+bool logToStdout(std::string logname, int * prevFD)
 {
-  std::cout << "launching clangd-proxy\n";
   const char * homeDir = getenv("HOME");
   if (!homeDir)
   {
     std::cerr << "Could not get access to environment variable HOME" << std::endl;
-    return 1;
+    return false;
   }
-  std::ofstream logfile(std::string(homeDir) + "/.clangd-proxy.log");
-  if (!logfile.is_open())
+  FILE * logfile = fopen((std::string(homeDir) + "/" + logname).c_str(), "w");
+  if (!logfile)
   {
     std::cerr << "Could not open log file!" << std::endl;
-    return 1;
+    return false;
   }
 
-  logfile << "New session: ";
+  int logfile_fd = fileno(logfile);
+  *prevFD = dup(fileno(stdout));
+  dup2(logfile_fd, fileno(stdout));
+
+  return true;
+}
+
+int main(int argc, char* argv[])
+{
+  int stdoutFD;
+  if (!logToStdout("/.clangd-proxy.log", &stdoutFD))
+    return 1;
+  std::cout << "launching clangd-proxy\n";
+
   for (int i = 0; i < argc; i++)
   {
-    logfile << argv[i] << " ";
+    std::cout << argv[i] << " ";
   }
-  logfile << std::endl;
+  std::cout << std::endl;
 
   // Create pipes for parent and child process to communicate
   // read from 0 write to 1
@@ -35,17 +47,17 @@ int main(int argc, char* argv[])
 
   if (pipe(pipeToProg))
   {
-    logfile << "failed to create pipe to clangd" << std::endl;
+    std::cout << "failed to create pipe to clangd" << std::endl;
     return 1;
   }
   if (pipe(pipeToProxy))
   {
-    logfile << "failed to create pipe to proxy" << std::endl;
+    std::cout << "failed to create pipe to proxy" << std::endl;
     return 1;
   }
   if (pipe(pipeToProxyInfo))
   {
-    logfile << "failed to create pipe to proxy" << std::endl;
+    std::cout << "failed to create pipe to proxy" << std::endl;
     return 1;
   }
 
@@ -53,23 +65,24 @@ int main(int argc, char* argv[])
   {
     case 0: // Child process (clangd)
     {
-      logfile << "clangd process created" << std::endl;
+      std::cout << "clangd process created" << std::endl;
       dup2(pipeToProg[0], STDIN_FILENO);
       dup2(pipeToProxy[1], STDOUT_FILENO);
       dup2(pipeToProxyInfo[1], STDERR_FILENO);
 
       // Close unused ends
+      close(stdoutFD);
       close(pipeToProg[1]);
       close(pipeToProxy[0]);
       close(pipeToProxyInfo[0]);
 
       execl("/usr/bin/clangd", "clangd", (char*)NULL);
-      logfile << "Could not execute clangd in child" << std::endl;
+      std::cout << "Could not execute clangd in child" << std::endl;
       return 0;
     }
     default: // Parent process (proxy)
     {
-      logfile << "proxy process created" << std::endl;
+      std::cout << "proxy process created" << std::endl;
       // Make stdio non blocking
       fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK | fcntl(STDIN_FILENO, F_GETFL, 0));
       // Make clangd pipe non blocking
@@ -93,8 +106,8 @@ int main(int argc, char* argv[])
         if (bytes_read_input != -1)
         {
           input[bytes_read_input] = '\0'; // Null terminate string
-          // logfile << "Read " << bytes_read_input << " bytes from input" << std::endl;
-          // logfile << "FROM EDITOR: " << input << std::endl;
+          // std::cout << "Read " << bytes_read_input << " bytes from input" << std::endl;
+          // std::cout << "FROM EDITOR: " << input << std::endl;
           write(pipeToProg[1], input, bytes_read_input);
         }
 
@@ -103,9 +116,9 @@ int main(int argc, char* argv[])
         if (bytes_read_clangd != -1)
         {
           output[bytes_read_clangd] = '\0'; // Null terminate string
-          // logfile << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
-          // logfile << "FROM CLANGD: " << output << std::endl;
-          write(STDOUT_FILENO, output, bytes_read_clangd);
+          // std::cout << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
+          // std::cout << "FROM CLANGD: " << output << std::endl;
+          write(stdoutFD, output, bytes_read_clangd);
         }
 
         // Handle stderr
@@ -113,9 +126,9 @@ int main(int argc, char* argv[])
         if (bytes_read_clangd_err != -1)
         {
           info[bytes_read_clangd_err] = '\0'; // Null terminate string
-          logfile << info << std::endl;
-          // logfile << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
-          // logfile << "FROM CLANGD: " << info << std::endl;
+          std::cout << info << std::endl;
+          // std::cout << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
+          // std::cout << "FROM CLANGD: " << info << std::endl;
           write(STDERR_FILENO, info, bytes_read_clangd_err);
         }
 
@@ -126,12 +139,11 @@ int main(int argc, char* argv[])
       int status;
       kill(pid, SIGKILL); //send SIGKILL signal to the child process
       waitpid(pid, &status, 0);
-      logfile.close();
       return 0;
     }
     case -1:
     {
-      logfile << "Could not fork" << std::endl;
+      std::cout << "Could not fork" << std::endl;
       return 1;
     }
   }
