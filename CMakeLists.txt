@@ -3,8 +3,9 @@ cmake_minimum_required(VERSION 3.11)
 project(clangd-proxy)
 
 file(GLOB SOURCES "src/*.cpp")
+file(GLOB HEADERS "src/*.hpp")
 
-add_executable(clangd-proxy ${SOURCES})
+add_executable(clangd-proxy ${SOURCES} ${HEADERS})
 
 include(FetchContent)
 
