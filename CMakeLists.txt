@@ -5,7 +5,7 @@ project(clangd-proxy)
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.hpp")
 
-add_executable(clangd-proxy ${SOURCES} ${HEADERS})
+add_executable(clangd-proxy ${HEADERS} ${SOURCES})
 
 include(FetchContent)
 
