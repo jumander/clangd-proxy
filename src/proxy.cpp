@@ -1,7 +1,4 @@
 #include "proxy.hpp"
-#include <sys/wait.h>
-#include <sys/prctl.h>
-#include <fcntl.h>
 #include <iostream>
 
 namespace lsp_proxy {
@@ -52,11 +49,6 @@ namespace lsp_proxy {
       default: // Parent process (proxy)
       {
         std::cout << "proxy process created" << std::endl;
-        // Make stdio non blocking
-        fcntl(stdDescriptors.in, F_SETFL, O_NONBLOCK | fcntl(stdDescriptors.in, F_GETFL, 0));
-        // Make clangd pipe non blocking
-        fcntl(pipeToProxy[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxy[0], F_GETFL, 0));
-        fcntl(pipeToProxyInfo[0], F_SETFL, O_NONBLOCK | fcntl(pipeToProxyInfo[0], F_GETFL, 0));
 
         // Close unused ends
         close(pipeToProg[0]);

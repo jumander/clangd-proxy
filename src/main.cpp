@@ -1,10 +1,8 @@
 #include <iostream>
-#include <fstream>
 #include <sys/wait.h>
-#include <sys/prctl.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include "proxy.hpp"
+#include "baseProcessor.hpp"
 
 bool logToStdout(std::string logname, int * prevFD)
 {
@@ -51,46 +49,38 @@ int main(int argc, char* argv[])
   if (!lsp_proxy::createClangdProxy("/usr/bin/clangd", stdDescriptors, proxyDescriptors, clangdPID))
     return 1;
 
-  int constexpr size = 8192;
-  char input[size + 1];
-  char output[size + 1];
-  char info[size + 1];
+  lsp_proxy::BaseProcessor toLSP(stdDescriptors.in, proxyDescriptors.in);
+  lsp_proxy::BaseProcessor fromLSP(proxyDescriptors.out, stdDescriptors.out);
+
+  // Make info pipe non-blocking
+  fcntl(proxyDescriptors.info, F_SETFL, O_NONBLOCK | fcntl(proxyDescriptors.info, F_GETFL, 0));
+  int constexpr infoBufferSize = 8192;
+  char infoBuffer[infoBufferSize + 1];
 
   while (true)
   {
+    bool changed = false;
+
     // Handle stdio
-    ssize_t bytes_read_input = read(stdDescriptors.in, input, size);
-    if (bytes_read_input > 0) {
-      input[bytes_read_input] = '\0'; // Null terminate string
-      // std::cout << "Read " << bytes_read_input << " bytes from input" << std::endl;
-      // std::cout << "FROM EDITOR: " << input << std::endl;
-      write(proxyDescriptors.in, input, bytes_read_input);
-    }
+    changed |= toLSP.readPipe();
 
     // Handle stdout
-    ssize_t bytes_read_clangd = read(proxyDescriptors.out, output, size);
-    if (bytes_read_clangd > 0)
-    {
-      output[bytes_read_clangd] = '\0'; // Null terminate string
-      // std::cout << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
-      // std::cout << "FROM CLANGD: " << output << std::endl;
-      write(stdDescriptors.out, output, bytes_read_clangd);
-    }
+    changed |= fromLSP.readPipe();
 
-    // Handle stderr
-    ssize_t bytes_read_clangd_err = read(proxyDescriptors.info, info, size);
-    if (bytes_read_clangd_err > 0)
+    // Handle info(stderr)
+    ssize_t bytes_read_info = read(proxyDescriptors.info, infoBuffer, infoBufferSize);
+    if (bytes_read_info > 0)
     {
-      info[bytes_read_clangd_err] = '\0'; // Null terminate string
-      std::cout << info << std::endl;
-      // std::cout << "Read " << bytes_read_clangd << " bytes from clangd" << std::endl;
-      // std::cout << "FROM CLANGD INFO: " << info << std::endl;
-      write(stdDescriptors.info, info, bytes_read_clangd_err);
+      infoBuffer[bytes_read_info] = '\0'; // Null terminate string
+      std::cout << infoBuffer << std::endl;
+      write(stdDescriptors.info, infoBuffer, bytes_read_info);
     }
+    changed |= bytes_read_info > 0;
 
-    if (bytes_read_clangd <= 0 && bytes_read_input <= 0)
+    if (!changed)
       usleep(50000); // Sleep for 0.05 seconds
   }
+
   int status;
   kill(clangdPID, SIGKILL); //send SIGKILL signal to the child process
   waitpid(clangdPID, &status, 0);
