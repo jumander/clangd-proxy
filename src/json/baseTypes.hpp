@@ -5,6 +5,14 @@
 
 namespace lsp_proxy {
 
+  template <typename T>
+  bool verifyType(const nlohmann::json & before)
+  {
+    T type = before;
+    nlohmann::json after;
+    to_json(after, type);
+    return before.dump() == after.dump();
+  }
   struct Position
   {
     uint line;
