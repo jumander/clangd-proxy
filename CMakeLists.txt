@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-file(GLOB SOURCES "src/*.cpp")
-file(GLOB HEADERS "src/*.hpp")
+file(GLOB SOURCES "src/*.cpp" "src/processors/*.cpp")
+file(GLOB HEADERS "src/*.hpp" "src/processors/*.hpp")
 
 add_executable(clangd-proxy ${HEADERS} ${SOURCES})
 
