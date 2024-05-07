@@ -75,4 +75,20 @@ namespace lsp_proxy {
     for (auto const & change : j["contentChanges"])
       o.contentChanges.push_back(change);
   }
+
+  struct ClangdFileStatus
+  {
+    std::string uri;
+    std::string state;
+  };
+
+  inline void to_json(nlohmann::json & j, const ClangdFileStatus & o) {
+    j = nlohmann::json({{"uri", o.uri}, {"state", o.state}});
+  }
+
+  inline void from_json(const nlohmann::json & j, ClangdFileStatus & o) {
+    j.at("uri").get_to(o.uri);
+    j.at("state").get_to(o.state);
+  }
+
 }
