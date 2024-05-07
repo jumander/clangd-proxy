@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include "baseTypes.hpp"
 
@@ -31,5 +32,47 @@ namespace lsp_proxy {
 
   inline void from_json(const nlohmann::json & j, DidOpenParams & o) {
     j.at("textDocument").get_to(o.textDocument);
+  }
+
+  struct TextDocumentContainer
+  {
+    TextDocument textDocument;
+  };
+
+  inline void to_json(nlohmann::json & j, const TextDocumentContainer & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}});
+  }
+
+  inline void from_json(const nlohmann::json & j, TextDocumentContainer & o) {
+    j.at("textDocument").get_to(o.textDocument);
+  }
+
+  struct DidSaveParams : public TextDocumentContainer
+  {
+    TextDocument textDocument;
+  };
+
+  struct DidCloseParams : public TextDocumentContainer
+  {
+    TextDocument textDocument;
+  };
+
+  struct DidChangeParams
+  {
+    VersionedTextDocument versionedTextDocument;
+    std::vector<TextDocumentContentChangeEvent> contentChanges;
+  };
+
+
+  inline void to_json(nlohmann::json & j, const DidChangeParams & o) {
+    j = nlohmann::json({{"textDocument", o.versionedTextDocument}, {"contentChanges", o.contentChanges}});
+  }
+
+
+  inline void from_json(const nlohmann::json & j, DidChangeParams & o) {
+    o.contentChanges.clear();
+    j.at("textDocument").get_to(o.versionedTextDocument);
+    for (auto const & change : j["contentChanges"])
+      o.contentChanges.push_back(change);
   }
 }

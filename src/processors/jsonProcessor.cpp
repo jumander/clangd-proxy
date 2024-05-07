@@ -20,16 +20,26 @@ namespace lsp_proxy {
       std::set<std::string> commonMethods = {"initialize", "initialized", "$/setTrace",
         "window/workDoneProgress/create", "textDocument/clangd.fileStatus", "textDocument/documentSymbol", "textDocument/semanticTokens/full",
         "$/progress", "textDocument/semanticTokens/full/delta", "textDocument/publishDiagnostics", "workspace/semanticTokens/refresh",
-        "textDocument/documentLink", "textDocument/codeAction", "textDocument/didChange", "textDocument/signatureHelp",
-        "textDocument/completion", "$/cancelRequest", "textDocument/documentHighlight", "textDocument/didSave",
-        "textDocument/switchSourceHeader", "textDocument/didClose"};
+        "textDocument/documentLink", "textDocument/codeAction", "textDocument/signatureHelp",
+        "textDocument/completion", "$/cancelRequest", "textDocument/documentHighlight",
+        "textDocument/switchSourceHeader"};
+
       if (method == "textDocument/hover")
-      {
         HoverParams params = jsonObj["params"];
-      }
       else if (method == "textDocument/didOpen")
-      {
         DidOpenParams params = jsonObj["params"];
+      else if (method == "textDocument/didSave")
+        DidSaveParams params = jsonObj["params"];
+      else if (method == "textDocument/didClose")
+        DidCloseParams params = jsonObj["params"];
+      else if (method == "textDocument/didChange")
+      {
+        std::cout << jsonObj["params"].dump() << std::endl;
+        DidChangeParams params = jsonObj["params"];
+        json apa;
+        to_json(apa, params);
+        std::cout << apa.dump() << std::endl;
+        std::cout << params.contentChanges.size() << std::endl;
       }
       else if(commonMethods.contains(method))
       {

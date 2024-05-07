@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <optional>
 #include <nlohmann/json.hpp>
 
 namespace lsp_proxy {
@@ -19,6 +20,21 @@ namespace lsp_proxy {
     j.at("character").get_to(o.character);
   }
 
+  struct Range
+  {
+    Position start;
+    Position end;
+  };
+
+  inline void to_json(nlohmann::json & j, const Range & o) {
+    j = nlohmann::json({{"start", o.start}, {"end", o.end}});
+  }
+
+  inline void from_json(const nlohmann::json & j, Range & o) {
+    j.at("start").get_to(o.start);
+    j.at("end").get_to(o.end);
+  }
+
   struct TextDocument
   {
     std::string uri;
@@ -32,6 +48,21 @@ namespace lsp_proxy {
     j.at("uri").get_to(o.uri);
   }
 
+  struct VersionedTextDocument
+  {
+    std::string uri;
+    int version;
+  };
+
+  inline void to_json(nlohmann::json & j, const VersionedTextDocument & o) {
+    j = nlohmann::json({{"uri", o.uri}, {"version", o.version}});
+  }
+
+  inline void from_json(const nlohmann::json & j, VersionedTextDocument & o) {
+    j.at("uri").get_to(o.uri);
+    j.at("version").get_to(o.version);
+  }
+
   struct TextDocumentItem
   {
     std::string uri;
@@ -41,10 +72,7 @@ namespace lsp_proxy {
   };
 
   inline void to_json(nlohmann::json & j, const TextDocumentItem & o) {
-    j = nlohmann::json({{"uri", o.uri}});
-    j = nlohmann::json({{"languageId", o.languageId}});
-    j = nlohmann::json({{"version", o.version}});
-    j = nlohmann::json({{"text", o.text}});
+    j = nlohmann::json({{"uri", o.uri}, {"languageId", o.languageId}, {"version", o.version}, {"text", o.text}});
   }
 
   inline void from_json(const nlohmann::json & j, TextDocumentItem & o) {
@@ -53,4 +81,26 @@ namespace lsp_proxy {
     j.at("version").get_to(o.version);
     j.at("text").get_to(o.text);
   }
+
+  struct TextDocumentContentChangeEvent
+  {
+    std::optional<Range> range;
+    std::optional<uint> rangeLength;
+    std::string text;
+  };
+
+  inline void to_json(nlohmann::json & j, const TextDocumentContentChangeEvent & o) {
+    j = nlohmann::json({{"text", o.text}});
+    if (o.range)
+      j["range"] = *o.range;
+    if (o.rangeLength)
+      j["rangeLength"] = *o.rangeLength;
+  }
+
+  inline void from_json(const nlohmann::json & j, TextDocumentContentChangeEvent & o) {
+    o.range = j.contains("range") ? j.at("range").get<Range>() : std::optional<Range>{};
+    o.rangeLength = j.contains("rangeLength") ? j.at("rangeLength").get<uint>() : std::optional<uint>{};
+    j.at("text").get_to(o.text);
+  }
+
 }
