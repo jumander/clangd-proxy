@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     if (bytes_read_info > 0)
     {
       infoBuffer[bytes_read_info] = '\0'; // Null terminate string
-      std::cout << infoBuffer << std::endl;
+      // std::cout << infoBuffer << std::endl;
       write(stdDescriptors.info, infoBuffer, bytes_read_info);
     }
     changed |= bytes_read_info > 0;
@@ -81,7 +81,9 @@ int main(int argc, char* argv[])
       usleep(50000); // Sleep for 0.05 seconds
   }
 
+
   int status;
+
   kill(clangdPID, SIGKILL); //send SIGKILL signal to the child process
   waitpid(clangdPID, &status, 0);
   return 0;
