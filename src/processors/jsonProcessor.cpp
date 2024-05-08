@@ -20,9 +20,7 @@ namespace lsp_proxy {
       std::set<std::string> commonMethods = {"initialize", "initialized", "$/setTrace",
         "window/workDoneProgress/create",
         "$/progress", "workspace/semanticTokens/refresh",
-        "textDocument/codeAction", "textDocument/signatureHelp",
-        "$/cancelRequest",
-        "textDocument/switchSourceHeader"};
+        "$/cancelRequest"};
 
       auto const & params = jsonObj["params"];
       if (method == "textDocument/hover")
@@ -51,13 +49,18 @@ namespace lsp_proxy {
         assertType<DocumentLinkParams>(params);
       else if (method == "textDocument/completion")
         assertType<CompletionParams>(params);
+      else if (method == "textDocument/codeAction")
+        assertType<CodeActionParams>(params);
+      else if (method == "textDocument/switchSourceHeader")
+        assertType<SwitchSourceHeaderParams>(params);
+      else if (method == "textDocument/signatureHelp")
+        assertType<SignatureHelpParams>(params);
       else if(commonMethods.contains(method))
       {
         std::cout << "no impl" << std::endl;
       }
-
-      if (method == "textDocument/documentSymbol")
-        std::cout << params.dump() << std::endl;
+      // if (method == "textDocument/signatureHelp")
+      //   std::cout << params.dump() << std::endl;
     }
     else
       std::cout << "no method" << std::endl;

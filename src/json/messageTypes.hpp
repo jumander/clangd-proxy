@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <tuple>
+#include <variant>
 #include <nlohmann/json.hpp>
 #include "baseTypes.hpp"
 
@@ -20,6 +22,10 @@ namespace lsp_proxy {
     j.at("textDocument").get_to(o.textDocument);
     j.at("position").get_to(o.position);
   }
+
+  struct SwitchSourceHeaderParams : public TextDocument
+  {
+  };
 
   struct DidOpenParams
   {
@@ -278,5 +284,153 @@ namespace lsp_proxy {
     if (j.contains("context")) o.context = j.at("context").get<CompletionContext>();
     if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
     if (j.contains("partialResultToken")) o.partialResultToken = j.at("partialResultToken").get<std::string>();
+  }
+
+  struct CodeActionContext
+  {
+    std::vector<Diagnostic> diagnostics;
+    std::optional<std::vector<std::string>> only;
+    std::optional<int> triggerKind;
+  };
+
+  inline void to_json(nlohmann::json & j, const CodeActionContext & o) {
+    j = nlohmann::json({{"diagnostics", o.diagnostics}});
+    if (o.only) j["only"] = *o.only;
+    if (o.triggerKind) j["triggerKind"] = *o.triggerKind;
+  }
+
+  inline void from_json(const nlohmann::json & j, CodeActionContext & o) {
+    j.at("diagnostics").get_to(o.diagnostics);
+    if (j.contains("only")) o.only = j.at("only").get<std::vector<std::string>>();
+    if (j.contains("triggerKind")) o.triggerKind = j.at("triggerKind").get<int>();
+  }
+
+  struct CodeActionParams
+  {
+    TextDocument textDocument;
+    Range range;
+    CodeActionContext context;
+    std::optional<std::string> workDoneToken;
+    std::optional<std::string> partialResultToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const CodeActionParams & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}, {"range", o.range}, {"context", o.context}});
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+    if (o.partialResultToken) j["partialResultToken"] = *o.partialResultToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, CodeActionParams & o) {
+    j.at("textDocument").get_to(o.textDocument);
+    j.at("range").get_to(o.range);
+    j.at("context").get_to(o.context);
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
+    if (j.contains("partialResultToken")) o.partialResultToken = j.at("partialResultToken").get<std::string>();
+  }
+
+  struct ParameterInformation
+  {
+    std::variant<std::string, std::tuple<int, int>> label;
+    std::optional<std::string> documentation;
+  };
+
+  inline void to_json(nlohmann::json & j, const ParameterInformation & o) {
+    j = nlohmann::json({});
+    if (std::holds_alternative<std::string>(o.label))
+      j["label"] = std::get<std::string>(o.label);
+    else
+      j["label"] = std::get<std::tuple<int, int>>(o.label);
+    if (o.documentation) j["documentation"] = *o.documentation;
+  }
+
+  inline void from_json(const nlohmann::json & j, ParameterInformation & o) {
+    if (j["label"].is_string())
+      o.label = j.at("label").get<std::string>();
+    else
+      o.label = j.at("label").get<std::tuple<int, int>>();
+    if (j.contains("documentation")) o.documentation = j.at("documentation").get<std::string>();
+  }
+
+  struct SignatureInformation
+  {
+    std::string label;
+    std::optional<std::string> documentation;
+    std::optional<std::vector<ParameterInformation>> parameters;
+    std::optional<uint> activeParameter;
+  };
+
+  inline void to_json(nlohmann::json & j, const SignatureInformation & o) {
+    j = nlohmann::json({{"label", o.label}});
+    if (o.documentation) j["documentation"] = *o.documentation;
+    if (o.parameters) j["parameters"] = *o.parameters;
+    if (o.activeParameter) j["activeParameter"] = *o.activeParameter;
+  }
+
+  inline void from_json(const nlohmann::json & j, SignatureInformation & o) {
+    j.at("label").get_to(o.label);
+    if (j.contains("documentation")) o.documentation = j.at("documentation").get<std::string>();
+    if (j.contains("parameters")) o.parameters = j.at("parameters").get<std::vector<ParameterInformation>>();
+    if (j.contains("activeParameter")) o.activeParameter = j.at("activeParameter").get<uint>();
+  }
+
+  struct SignatureHelp
+  {
+    std::vector<SignatureInformation> signatures;
+    std::optional<uint> activeSignature;
+    std::optional<uint> activeParameter;
+  };
+
+  inline void to_json(nlohmann::json & j, const SignatureHelp & o) {
+    j = nlohmann::json({{"signatures", o.signatures}});
+    if (o.activeSignature) j["activeSignature"] = *o.activeSignature;
+    if (o.activeParameter) j["activeParameter"] = *o.activeParameter;
+  }
+
+  inline void from_json(const nlohmann::json & j, SignatureHelp & o) {
+    j.at("signatures").get_to(o.signatures);
+    if (j.contains("activeSignature")) o.activeSignature = j.at("activeSignature").get<uint>();
+    if (j.contains("activeParameter")) o.activeParameter = j.at("activeParameter").get<uint>();
+  }
+
+  struct SignatureHelpContext
+  {
+    int triggerKind;
+    std::optional<std::string> triggerCharacter;
+    bool isRetrigger;
+    std::optional<SignatureHelp> activeSignatureHelp;
+  };
+
+  inline void to_json(nlohmann::json & j, const SignatureHelpContext & o) {
+    j = nlohmann::json({{"triggerKind", o.triggerKind}, {"isRetrigger", o.isRetrigger}});
+    if (o.triggerCharacter) j["triggerCharacter"] = *o.triggerCharacter;
+    if (o.activeSignatureHelp) j["activeSignatureHelp"] = *o.activeSignatureHelp;
+  }
+
+  inline void from_json(const nlohmann::json & j, SignatureHelpContext & o) {
+    j.at("triggerKind").get_to(o.triggerKind);
+    j.at("isRetrigger").get_to(o.isRetrigger);
+    if (j.contains("triggerCharacter")) o.triggerCharacter = j.at("triggerCharacter").get<std::string>();
+    if (j.contains("activeSignatureHelp")) o.activeSignatureHelp = j.at("activeSignatureHelp").get<SignatureHelp>();
+  }
+
+  struct SignatureHelpParams
+  {
+    std::optional<SignatureHelpContext> context;
+    TextDocument textDocument;
+    Position position;
+    std::optional<std::string> workDoneToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const SignatureHelpParams & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}, {"position", o.position}});
+    if (o.context) j["context"] = *o.context;
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, SignatureHelpParams & o) {
+    j.at("textDocument").get_to(o.textDocument);
+    j.at("position").get_to(o.position);
+    if (j.contains("context")) o.context = j.at("context").get<SignatureHelpContext>();
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
   }
 }
