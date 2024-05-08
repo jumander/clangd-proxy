@@ -18,8 +18,8 @@ namespace lsp_proxy {
       method.erase(remove(method.begin(), method.end(), '\"'), method.end());
       std::cout << method << std::endl;
       std::set<std::string> commonMethods = {"initialize", "initialized", "$/setTrace",
-        "window/workDoneProgress/create", "textDocument/documentSymbol", "textDocument/semanticTokens/full",
-        "$/progress", "textDocument/semanticTokens/full/delta", "workspace/semanticTokens/refresh",
+        "window/workDoneProgress/create",
+        "$/progress", "workspace/semanticTokens/refresh",
         "textDocument/documentLink", "textDocument/codeAction", "textDocument/signatureHelp",
         "textDocument/completion", "$/cancelRequest", "textDocument/documentHighlight",
         "textDocument/switchSourceHeader"};
@@ -39,14 +39,19 @@ namespace lsp_proxy {
         assertType<ClangdFileStatus>(params);
       else if (method == "textDocument/publishDiagnostics")
         assertType<PublishDiagnosticsParams>(params);
+      else if (method == "textDocument/documentSymbol")
+        assertType<DocumentSymbolParams>(params);
+      else if (method == "textDocument/semanticTokens/full")
+        assertType<SemanticTokensParams>(params);
+      else if (method == "textDocument/semanticTokens/full/delta")
+        assertType<SemanticTokensDeltaParams>(params);
       else if(commonMethods.contains(method))
       {
         std::cout << "no impl" << std::endl;
       }
 
-
-      // if (method == "textDocument/publishDiagnostics")
-      //   std::cout << params.dump() << std::endl;
+      if (method == "textDocument/documentSymbol")
+        std::cout << params.dump() << std::endl;
     }
     else
       std::cout << "no method" << std::endl;

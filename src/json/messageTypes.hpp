@@ -49,12 +49,10 @@ namespace lsp_proxy {
 
   struct DidSaveParams : public TextDocumentContainer
   {
-    TextDocument textDocument;
   };
 
   struct DidCloseParams : public TextDocumentContainer
   {
-    TextDocument textDocument;
   };
 
   struct DidChangeParams
@@ -168,5 +166,53 @@ namespace lsp_proxy {
     j.at("uri").get_to(o.uri);
     j.at("diagnostics").get_to(o.diagnostics);
     if (j.contains("version")) o.version = j.at("version").get<int>();
+  }
+
+  struct SymbolContainer
+  {
+    TextDocument textDocument;
+    std::optional<std::string> workDoneToken;
+    std::optional<std::string> partialResultToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const SymbolContainer & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}});
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+    if (o.partialResultToken) j["partialResultToken"] = *o.partialResultToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, SymbolContainer & o) {
+    j.at("textDocument").get_to(o.textDocument);
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
+    if (j.contains("partialResultToken")) o.partialResultToken = j.at("partialResultToken").get<std::string>();
+  }
+
+  struct DocumentSymbolParams : public SymbolContainer
+  {
+  };
+
+  struct SemanticTokensParams : public SymbolContainer
+  {
+  };
+
+  struct SemanticTokensDeltaParams
+  {
+    TextDocument textDocument;
+    std::string previousResultId;
+    std::optional<std::string> workDoneToken;
+    std::optional<std::string> partialResultToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const SemanticTokensDeltaParams & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}, {"previousResultId", o.previousResultId}});
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+    if (o.partialResultToken) j["partialResultToken"] = *o.partialResultToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, SemanticTokensDeltaParams & o) {
+    j.at("textDocument").get_to(o.textDocument);
+    j.at("previousResultId").get_to(o.previousResultId);
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
+    if (j.contains("partialResultToken")) o.partialResultToken = j.at("partialResultToken").get<std::string>();
   }
 }
