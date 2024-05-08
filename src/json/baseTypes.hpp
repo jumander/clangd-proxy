@@ -52,6 +52,21 @@ namespace lsp_proxy {
     j.at("end").get_to(o.end);
   }
 
+  struct Location
+  {
+    std::string uri;
+    Range range;
+  };
+
+  inline void to_json(nlohmann::json & j, const Location & o) {
+    j = nlohmann::json({{"uri", o.uri}, {"range", o.range}});
+  }
+
+  inline void from_json(const nlohmann::json & j, Location & o) {
+    j.at("uri").get_to(o.uri);
+    j.at("range").get_to(o.range);
+  }
+
   struct TextDocument
   {
     std::string uri;
@@ -108,10 +123,8 @@ namespace lsp_proxy {
 
   inline void to_json(nlohmann::json & j, const TextDocumentContentChangeEvent & o) {
     j = nlohmann::json({{"text", o.text}});
-    if (o.range)
-      j["range"] = *o.range;
-    if (o.rangeLength)
-      j["rangeLength"] = *o.rangeLength;
+    if (o.range) j["range"] = *o.range;
+    if (o.rangeLength) j["rangeLength"] = *o.rangeLength;
   }
 
   inline void from_json(const nlohmann::json & j, TextDocumentContentChangeEvent & o) {
