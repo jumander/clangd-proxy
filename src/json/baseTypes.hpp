@@ -2,16 +2,25 @@
 #include <string>
 #include <optional>
 #include <nlohmann/json.hpp>
+#include <iostream>
 
 namespace lsp_proxy {
 
   template <typename T>
-  bool verifyType(const nlohmann::json & before)
+  void assertType(const nlohmann::json & before)
   {
     T type = before;
     nlohmann::json after;
     to_json(after, type);
-    return before.dump() == after.dump();
+    if (before.dump() != after.dump())
+    {
+      std::cout << "Conversion modified data!" << std::endl;
+      std::cout << "Original:" << std::endl;
+      std::cout << before.dump() << std::endl;
+      std::cout << "Corrupted:" << std::endl;
+      std::cout << after.dump() << std::endl;
+      exit(1);
+    }
   }
   struct Position
   {

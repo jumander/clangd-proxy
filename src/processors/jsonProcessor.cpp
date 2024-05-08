@@ -25,18 +25,18 @@ namespace lsp_proxy {
         "textDocument/switchSourceHeader"};
 
       auto const & params = jsonObj["params"];
-      if (method == "textDocument/hover" && !verifyType<HoverParams>(params))
-        exit(1);
-      else if (method == "textDocument/didOpen" && !verifyType<DidOpenParams>(params))
-        exit(1);
-      else if (method == "textDocument/didSave" && !verifyType<DidSaveParams>(params))
-        exit(1);
-      else if (method == "textDocument/didClose" && !verifyType<DidCloseParams>(params))
-        exit(1);
-      else if (method == "textDocument/didChange" && !verifyType<DidChangeParams>(params))
-        exit(1);
-      else if (method == "textDocument/clangd.fileStatus" && !verifyType<ClangdFileStatus>(params))
-        exit(1);
+      if (method == "textDocument/hover")
+        assertType<HoverParams>(params);
+      else if (method == "textDocument/didOpen")
+        assertType<DidOpenParams>(params);
+      else if (method == "textDocument/didSave")
+        assertType<DidSaveParams>(params);
+      else if (method == "textDocument/didClose")
+        assertType<DidCloseParams>(params);
+      else if (method == "textDocument/didChange")
+        assertType<DidChangeParams>(params);
+      else if (method == "textDocument/clangd.fileStatus")
+        assertType<ClangdFileStatus>(params);
       else if(commonMethods.contains(method))
       {
         std::cout << "no impl" << std::endl;
