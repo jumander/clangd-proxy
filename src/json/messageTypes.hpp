@@ -191,6 +191,10 @@ namespace lsp_proxy {
   {
   };
 
+  struct DocumentLinkParams : public SymbolContainer
+  {
+  };
+
   struct SemanticTokensParams : public SymbolContainer
   {
   };
@@ -212,6 +216,66 @@ namespace lsp_proxy {
   inline void from_json(const nlohmann::json & j, SemanticTokensDeltaParams & o) {
     j.at("textDocument").get_to(o.textDocument);
     j.at("previousResultId").get_to(o.previousResultId);
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
+    if (j.contains("partialResultToken")) o.partialResultToken = j.at("partialResultToken").get<std::string>();
+  }
+
+  struct DocumentHighlightParams
+  {
+    TextDocument textDocument;
+    Position position;
+    std::optional<std::string> workDoneToken;
+    std::optional<std::string> partialResultToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const DocumentHighlightParams & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}, {"position", o.position}});
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+    if (o.partialResultToken) j["partialResultToken"] = *o.partialResultToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, DocumentHighlightParams & o) {
+    j.at("textDocument").get_to(o.textDocument);
+    j.at("position").get_to(o.position);
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
+    if (j.contains("partialResultToken")) o.partialResultToken = j.at("partialResultToken").get<std::string>();
+  }
+  struct CompletionContext
+  {
+    int triggerKind;
+    std::optional<std::string> triggerCharacter;
+  };
+
+  inline void to_json(nlohmann::json & j, const CompletionContext & o) {
+    j = nlohmann::json({{"triggerKind", o.triggerKind}});
+    if (o.triggerCharacter) j["triggerCharacter"] = *o.triggerCharacter;
+  }
+
+  inline void from_json(const nlohmann::json & j, CompletionContext & o) {
+    j.at("triggerKind").get_to(o.triggerKind);
+    if (j.contains("triggerCharacter")) o.triggerCharacter = j.at("triggerCharacter").get<std::string>();
+  }
+
+  struct CompletionParams
+  {
+    std::optional<CompletionContext> context;
+    TextDocument textDocument;
+    Position position;
+    std::optional<std::string> workDoneToken;
+    std::optional<std::string> partialResultToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const CompletionParams & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}, {"position", o.position}});
+    if (o.context) j["context"] = *o.context;
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+    if (o.partialResultToken) j["partialResultToken"] = *o.partialResultToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, CompletionParams & o) {
+    j.at("textDocument").get_to(o.textDocument);
+    j.at("position").get_to(o.position);
+    if (j.contains("context")) o.context = j.at("context").get<CompletionContext>();
     if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
     if (j.contains("partialResultToken")) o.partialResultToken = j.at("partialResultToken").get<std::string>();
   }

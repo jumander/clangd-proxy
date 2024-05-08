@@ -20,8 +20,8 @@ namespace lsp_proxy {
       std::set<std::string> commonMethods = {"initialize", "initialized", "$/setTrace",
         "window/workDoneProgress/create",
         "$/progress", "workspace/semanticTokens/refresh",
-        "textDocument/documentLink", "textDocument/codeAction", "textDocument/signatureHelp",
-        "textDocument/completion", "$/cancelRequest", "textDocument/documentHighlight",
+        "textDocument/codeAction", "textDocument/signatureHelp",
+        "$/cancelRequest",
         "textDocument/switchSourceHeader"};
 
       auto const & params = jsonObj["params"];
@@ -45,6 +45,12 @@ namespace lsp_proxy {
         assertType<SemanticTokensParams>(params);
       else if (method == "textDocument/semanticTokens/full/delta")
         assertType<SemanticTokensDeltaParams>(params);
+      else if (method == "textDocument/documentHighlight")
+        assertType<DocumentHighlightParams>(params);
+      else if (method == "textDocument/documentLink")
+        assertType<DocumentLinkParams>(params);
+      else if (method == "textDocument/completion")
+        assertType<CompletionParams>(params);
       else if(commonMethods.contains(method))
       {
         std::cout << "no impl" << std::endl;
