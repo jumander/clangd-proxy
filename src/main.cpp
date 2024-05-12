@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include "proxy.hpp"
+#include "proxyFunctions.hpp"
 #include "processors/jsonProcessor.hpp"
 
 bool logToStdout(std::string logname, int * prevFD)

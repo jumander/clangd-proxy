@@ -1,4 +1,4 @@
-#include "proxy.hpp"
+#include "proxyFunctions.hpp"
 #include <iostream>
 
 namespace lsp_proxy {
