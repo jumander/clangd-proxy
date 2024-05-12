@@ -16,11 +16,10 @@ namespace lsp_proxy {
     {
       std::string method = jsonObj["method"];
       method.erase(remove(method.begin(), method.end(), '\"'), method.end());
-      std::cout << method << std::endl;
-      std::set<std::string> commonMethods = {"initialize", "initialized", "$/setTrace",
-        "window/workDoneProgress/create",
-        "$/progress", "workspace/semanticTokens/refresh",
-        "$/cancelRequest"};
+      std::set<std::string> ignoredMethods = {"initialize", "initialized",
+        "$/setTrace", "$/progress", "$/cancelRequest",
+        "window/workDoneProgress/create", "workspace/semanticTokens/refresh",
+        };
 
       auto const & params = jsonObj["params"];
       if (method == "textDocument/hover")
@@ -55,15 +54,19 @@ namespace lsp_proxy {
         assertType<SwitchSourceHeaderParams>(params);
       else if (method == "textDocument/signatureHelp")
         assertType<SignatureHelpParams>(params);
-      else if(commonMethods.contains(method))
+      else if (method == "textDocument/prepareRename")
+        assertType<PrepareRenameParams>(params);
+      else if (method == "textDocument/rename")
+        assertType<RenameParams>(params);
+      else if (!ignoredMethods.contains(method))
       {
-        std::cout << "no impl" << std::endl;
+        std::cout << "unhandled method " << method << std::endl;
       }
       // if (method == "textDocument/signatureHelp")
       //   std::cout << params.dump() << std::endl;
     }
     else
-      std::cout << "no method" << std::endl;
+      std::cout << "reply" << std::endl;
 
 
 

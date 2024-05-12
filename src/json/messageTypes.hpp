@@ -433,4 +433,42 @@ namespace lsp_proxy {
     if (j.contains("context")) o.context = j.at("context").get<SignatureHelpContext>();
     if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
   }
+
+  struct PrepareRenameParams
+  {
+    TextDocument textDocument;
+    Position position;
+    std::optional<std::string> workDoneToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const PrepareRenameParams & o) {
+    j = nlohmann::json({{"textDocument", o.textDocument}, {"position", o.position}});
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, PrepareRenameParams & o) {
+    j.at("textDocument").get_to(o.textDocument);
+    j.at("position").get_to(o.position);
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
+  }
+
+  struct RenameParams
+  {
+    std::string newName;
+    TextDocument textDocument;
+    Position position;
+    std::optional<std::string> workDoneToken;
+  };
+
+  inline void to_json(nlohmann::json & j, const RenameParams & o) {
+    j = nlohmann::json({{"newName", o.newName}, {"textDocument", o.textDocument}, {"position", o.position}});
+    if (o.workDoneToken) j["workDoneToken"] = *o.workDoneToken;
+  }
+
+  inline void from_json(const nlohmann::json & j, RenameParams & o) {
+    j.at("newName").get_to(o.newName);
+    j.at("textDocument").get_to(o.textDocument);
+    j.at("position").get_to(o.position);
+    if (j.contains("workDoneToken")) o.workDoneToken = j.at("workDoneToken").get<std::string>();
+  }
 }
