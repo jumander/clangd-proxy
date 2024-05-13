@@ -10,7 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 file(GLOB SOURCES "src/*.cpp" "src/processors/*.cpp")
 file(GLOB HEADERS "src/*.hpp" "src/processors/*.hpp")
 
-add_executable(clangd-proxy ${HEADERS} ${SOURCES})
+add_executable(clangd-proxy ${SOURCES})
 
 include(FetchContent)
 
