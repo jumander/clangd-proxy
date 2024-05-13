@@ -2,7 +2,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include "proxyFunctions.hpp"
-#include "processors/jsonProcessor.hpp"
+#include "clangdProxy.hpp"
 
 bool logToStdout(std::string logname, int * prevFD)
 {
@@ -49,8 +49,7 @@ int main(int argc, char* argv[])
   if (!lsp_proxy::createClangdProxy("/usr/bin/clangd", stdDescriptors, proxyDescriptors, clangdPID))
     return 1;
 
-  lsp_proxy::JSONProcessor toLSP(stdDescriptors.in, proxyDescriptors.in);
-  lsp_proxy::JSONProcessor fromLSP(proxyDescriptors.out, stdDescriptors.out);
+  lsp_proxy::ClangdProxy clangdProxy(stdDescriptors.in, proxyDescriptors.in, proxyDescriptors.out, stdDescriptors.out);
 
   // Make info pipe non-blocking
   fcntl(proxyDescriptors.info, F_SETFL, O_NONBLOCK | fcntl(proxyDescriptors.info, F_GETFL, 0));
@@ -61,11 +60,7 @@ int main(int argc, char* argv[])
   {
     bool changed = false;
 
-    // Handle stdio
-    changed |= toLSP.readPipe();
-
-    // Handle stdout
-    changed |= fromLSP.readPipe();
+    changed |= clangdProxy.readPipes();
 
     // Handle info(stderr)
     ssize_t bytes_read_info = read(proxyDescriptors.info, infoBuffer, infoBufferSize);
