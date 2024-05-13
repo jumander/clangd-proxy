@@ -11,7 +11,9 @@ namespace lsp_proxy {
       JSONProcessor(int inFD, int outFD, int bufferSize=16384) : BaseProcessor(inFD, outFD, bufferSize) {};
       ~JSONProcessor() {};
 
-      std::string process(std::string const & message) override;
+
+    protected:
+      virtual std::optional<std::string> process(std::string const & message);
   };
 
 }

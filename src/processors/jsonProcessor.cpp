@@ -7,7 +7,7 @@
 
 namespace lsp_proxy {
 
-  std::string JSONProcessor::process(std::string const & message)
+  std::optional<std::string> JSONProcessor::process(std::string const & message)
   {
     using namespace nlohmann;
     json jsonObj = json::parse(message);
