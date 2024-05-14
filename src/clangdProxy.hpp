@@ -1,5 +1,6 @@
 #pragma once
 #include "processors/baseProcessor.hpp"
+#include <nlohmann/json.hpp>
 
 namespace lsp_proxy {
 
@@ -11,9 +12,9 @@ namespace lsp_proxy {
       bool readPipes();
 
       /// Returns whether or not the message was handled
-      virtual bool handleMessage(std::string & message);
+      virtual bool handleMessage(nlohmann::json const & message);
       /// Returns whether or not the response was handled
-      virtual bool handleResponse(std::string & response);
+      virtual bool handleResponse(nlohmann::json const & response);
 
     private:
       void handleServerMessage(std::string & message);

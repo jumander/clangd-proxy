@@ -1,5 +1,4 @@
 #include "clangdProxy.hpp"
-#include <nlohmann/json.hpp>
 #include <iostream>
 #include <set>
 
@@ -33,32 +32,29 @@ namespace lsp_proxy {
   void ClangdProxy::handleServerMessage(std::string & message)
   {
     std::cout << "M to server" << std::endl;
-    if (!handleMessage(message))
+    if (!handleMessage(nlohmann::json(message)))
       m_clientToServer.writePipe(message);
   }
 
   void ClangdProxy::handleClientMessage(std::string & message)
   {
     std::cout << "M to client" << std::endl;
-    if (!handleMessage(message))
+    if (!handleMessage(nlohmann::json(message)))
       m_serverToClient.writePipe(message);
   }
 
-  bool ClangdProxy::handleMessage(std::string & message)
+  bool ClangdProxy::handleMessage(nlohmann::json const & message)
   {
-    using namespace nlohmann;
-    json jsonObj = json::parse(message);
-
-    if (jsonObj.contains("method"))
+    if (message.contains("method"))
     {
-      std::string method = jsonObj["method"];
+      std::string method = message["method"];
       method.erase(remove(method.begin(), method.end(), '\"'), method.end());
       std::set<std::string> ignoredMethods = {"initialize", "initialized",
         "$/setTrace", "$/progress", "$/cancelRequest",
         "window/workDoneProgress/create", "workspace/semanticTokens/refresh",
         };
 
-      auto const & params = jsonObj["params"];
+      auto const & params = message["params"];
       if (method == "textDocument/hover")
         assertType<HoverParams>(params);
       else if (method == "textDocument/didOpen")
@@ -108,7 +104,7 @@ namespace lsp_proxy {
     return false;
   }
 
-  bool ClangdProxy::handleResponse(std::string & response)
+  bool ClangdProxy::handleResponse(nlohmann::json const & response)
   {
     return false;
   }
