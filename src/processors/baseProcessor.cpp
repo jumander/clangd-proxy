@@ -60,8 +60,7 @@ namespace lsp_proxy {
           if (m_message.size() >= headerPos + contentLength) // Read content
           {
             auto content = m_message.substr(headerPos, contentLength);
-            if (auto processedMessage = process(content))
-              writePipe(*processedMessage);
+            process(content);
             m_message = m_message.substr(headerPos + contentLength);
             headerPos = 0;
           }
@@ -81,12 +80,12 @@ namespace lsp_proxy {
     write(m_outFD, message.c_str(), message.size());
   }
 
-  std::optional<std::string> BaseProcessor::process(std::string & message)
+  void BaseProcessor::process(std::string & message)
   {
     if (m_callback)
       return m_callback(message);
     else
-      return message;
+      writePipe(message);
   }
 
 }

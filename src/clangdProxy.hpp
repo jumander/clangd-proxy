@@ -10,12 +10,14 @@ namespace lsp_proxy {
 
       bool readPipes();
 
-      std::optional<std::string> processMessage(std::string & message);
-      std::optional<std::string> processResponse(std::string & message);
+      /// Returns whether or not the message was handled
+      virtual bool handleMessage(std::string & message);
+      /// Returns whether or not the response was handled
+      virtual bool handleResponse(std::string & response);
 
     private:
-      std::optional<std::string> processServerMessage(std::string & message);
-      std::optional<std::string> processClientMessage(std::string & message);
+      void handleServerMessage(std::string & message);
+      void handleClientMessage(std::string & message);
 
 
     private:

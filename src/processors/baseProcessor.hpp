@@ -5,7 +5,7 @@
 
 namespace lsp_proxy {
 
-  using HandleMessageCallback = std::function<std::optional<std::string>(std::string &)>;
+  using HandleMessageCallback = std::function<void(std::string &)>;
 
   /* Reads data from an input file descriptor in the form of base protocol.
    * It process it before sending it sending it out to an output file descriptor.
@@ -18,13 +18,12 @@ namespace lsp_proxy {
       void setMessageCallback(HandleMessageCallback callback);
 
       bool readPipe();
-
-    protected:
-      virtual std::optional<std::string> process(std::string & message);
-
-    private:
       void writePipe(std::string const & message);
 
+    protected:
+      virtual void process(std::string & message);
+
+    private:
       int m_inFD;
       int m_outFD;
       int m_bufferSize;

@@ -12,10 +12,10 @@ namespace lsp_proxy {
   {
     // Set callbacks
     m_clientToServer.setMessageCallback([this](std::string & message){
-      return processServerMessage(message);
+      return handleServerMessage(message);
     });
     m_serverToClient.setMessageCallback([this](std::string & message){
-      return processClientMessage(message);
+      return handleClientMessage(message);
     });
   }
 
@@ -30,19 +30,21 @@ namespace lsp_proxy {
     return changed;
   }
 
-  std::optional<std::string> ClangdProxy::processServerMessage(std::string & message)
+  void ClangdProxy::handleServerMessage(std::string & message)
   {
     std::cout << "M to server" << std::endl;
-    return processMessage(message);
+    if (!handleMessage(message))
+      m_clientToServer.writePipe(message);
   }
 
-  std::optional<std::string> ClangdProxy::processClientMessage(std::string & message)
+  void ClangdProxy::handleClientMessage(std::string & message)
   {
     std::cout << "M to client" << std::endl;
-    return processMessage(message);
+    if (!handleMessage(message))
+      m_serverToClient.writePipe(message);
   }
 
-  std::optional<std::string> ClangdProxy::processMessage(std::string & message)
+  bool ClangdProxy::handleMessage(std::string & message)
   {
     using namespace nlohmann;
     json jsonObj = json::parse(message);
@@ -103,13 +105,11 @@ namespace lsp_proxy {
     else
       std::cout << "reply" << std::endl;
 
-
-
-    return jsonObj.dump();
+    return false;
   }
 
-  std::optional<std::string> ClangdProxy::processResponse(std::string & response)
+  bool ClangdProxy::handleResponse(std::string & response)
   {
-    return response;
+    return false;
   }
 }
