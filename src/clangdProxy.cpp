@@ -31,16 +31,36 @@ namespace lsp_proxy {
 
   void ClangdProxy::handleServerMessage(std::string & message)
   {
+    auto jsonMessage = nlohmann::json(message);
+    if (auto const & record = getRecord(jsonMessage))
+      m_serverRecord[record->id] = *record;
+
     std::cout << "M to server" << std::endl;
-    if (!handleMessage(nlohmann::json(message)))
+    if (!handleMessage(jsonMessage))
       m_clientToServer.writePipe(message);
   }
 
   void ClangdProxy::handleClientMessage(std::string & message)
   {
+    auto jsonMessage = nlohmann::json(message);
+    if (auto const & record = getRecord(jsonMessage))
+      m_clientRecord[record->id] = *record;
+
     std::cout << "M to client" << std::endl;
-    if (!handleMessage(nlohmann::json(message)))
+    if (!handleMessage(jsonMessage))
       m_serverToClient.writePipe(message);
+  }
+
+  std::optional<MessageRecord> ClangdProxy::getRecord(nlohmann::json const & message)
+  {
+    if (message.contains("method") && message.contains("id"))
+    {
+      MessageRecord record;
+      record.id = message["id"].get<int>();
+      record.method = message["method"].get<std::string>();
+      return record;
+    }
+    return std::nullopt;
   }
 
   bool ClangdProxy::handleMessage(nlohmann::json const & message)
